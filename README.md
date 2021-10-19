@@ -15,7 +15,14 @@ The goal of bis620 is to …
 You can install the development version of bis620 like so:
 
 ``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+install.packages("bis620")
+```
+
+And the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("yzm9393/bis620")
 ```
 
 ## Example
