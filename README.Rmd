@@ -32,7 +32,7 @@ And the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("Violettttta/bis620")
+devtools::install_github("yzm9393/bis620")
 ```
 
 ## Example
