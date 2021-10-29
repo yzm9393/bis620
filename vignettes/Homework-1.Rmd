@@ -1,0 +1,359 @@
+---
+title: "homework-1"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{homework-1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Description of the study
+
+Particularly interested in colorectal cancer, our group selected a study named “A Randomized, Multicenter, Phase 3 Study to Compare the Efficacy of Panitumumab in Combination With Oxaliplatin/ 5-fluorouracil/ Leucovorin to the Efficacy of Oxaliplatin/ 5-fluorouracil/ Leucovorin Alone in Patients With Previously Untreated Metastatic Colorectal Cancer” from Project Data Sphere. This is an open label, randomized and interventional study with parallel assignment.
+
+The purpose of this study is to determine the treatment effect of panitumumab in combination with FOLFOX compared to FOLFOX alone as first line therapy for metastatic colorectal cancer. There are two arms in this study, experimental arm (FOLFOX + Panitumumab) and active comparator arm (FOLFOX). In the experiment arm, Participants were randomized to panitumumab, 6 mg/kg on Day 1 and FOLFOX chemotherapy regimen on Days 1 and 2 of each 14-day cycle until disease progression or unacceptable toxicity. While in the active comparator arm, participants only need to have FOLFOX chemotherapy. 
+
+The actual enrollment is 1183 participants. Among them 593 patients are randomized in the FOLFOX + Panitumumab group and 590 in the FOLFOX group. The baseline characteristics between the two arms are similar. The mean age for the FOLFOX + Panitumumab group is 61.5 and that of the FOLFOX group is 60.3. The gender distribution is that 34.9% are female in the FOLFOX + Panitumumab group and that of 39.3% in the FOLFOX group. In addition, most of the patients in both groups are white or Caucasian with 530 in FOLFOX + Panitumumab and 540 in FOLFOX. In terms of geographic region, more than half of patients are from Western Europe, Canada, and Australia.  In the FOLFOX + Panitumumab group, 332 are from the above regions and in the FOLFOX group, 329 are from the above regions. Moreover, this study contains more patients of colon cancer than rectal cancer. In the FOLFOX + Panitumumab group, 394 have colon cancer and in the FOLFOX group, 398 have colon cancer. 
+
+The primary outcome measure is Progression-free Survival, which was defined as the time from randomization to disease progression with a maximum follow-up of 109 weeks. There are five secondary outcomes. First, Overall Survival, with a maximum follow-up of 153 weeks. Second, Percentage of Participants with an Objective Response, measured by central radiological assessment. Third, Time to Progression, with a maximum follow-up of 109 weeks. Fourth, Duration of Response for those participants with confirmed CR or PR. Fifth, Number of Participants with Adverse Events (AEs) with a maximum follow-up of 153 weeks.
+
+The inclusion criteria of this study are 18 years and older adults who were diagnosed of metastatic colorectal cancer and other detailed pathological criteria. The exclusion criteria are history or known presence of central nervous system (CNS) metastases, history of another primary cancer, prior chemotherapy, or systemic therapy for the treatment of metastatic colorectal cancer and some other underlying diseases.
+
+The folder called NCT00364013 (NCT number) contains all the data needed.
+
+## Exploratory analysis
+
+### Load library
+```{r}
+library(forceps)
+library(dplyr)
+library(haven)
+library(tibble)
+library(purrr)
+library(tidyr)
+library(listdown)
+library(variate)
+library(gtsummary)
+library(patchwork)
+library(ggplot2)
+library(plotly)
+library(ggpubr)
+library(forcats)
+library(bis620)
+```
+
+### Load data and rename
+```{r}
+data(Demo)
+demo <- Demo
+
+data(Respeval)
+respeval <- Respeval
+
+data(Ae)
+ae <- Ae
+```
+
+### Data set: demo (Demographics and BL Characteristics, one record per subject)
+### Variable: TRT (Assigned Treatment)
+```{r}
+#Number of patients
+nrow(demo)
+
+#Numbers of patients in treatment group (FOLFOX alone Panitumumab) and placebo group (FOLFOX)
+table(demo$TRT)
+```
+The numbers of patients in two groups are approximately equal.
+
+### Data set: respeval (Response Evaluation, one record per subject per evaluation)
+### Variable: RSRESP (Overall Response Status)
+```{r}
+#Check the number of patients in Response Evaluation data set
+length(unique(respeval$SUBJID))
+
+#All responses
+table(respeval$RSRESP)
+```
+
+### Create a new data set: respeval_n
+### Reorder levels of responses
+```{r}
+respeval_n <- respeval %>%
+  mutate(RSRESP = 
+           factor(RSRESP,
+                  c("Progressive disease", "Stable disease",
+                    "Partial response", "Complete response")))
+table(respeval_n$RSRESP)
+```
+
+```{r}
+#One row of all evaluation results per subject
+respeval_n <- respeval_n %>% nest(data = -SUBJID)
+
+#Number of visits per subject
+respeval_n <- respeval_n %>% mutate(nvisits = map_int(data, nrow))
+
+#The range of visits of subjects
+range(respeval_n$nvisits)
+```
+
+### Find the best response of each subject
+```{r}
+#Function to get the best response of each patient
+get_best_resp <- function(x) {
+  ret <- x %>%
+    select(RSRESP) %>%
+    na.omit() %>%
+    mutate(rsresp_num = as.integer(RSRESP)) %>%
+    arrange(desc(rsresp_num))
+  ret$RSRESP[1]
+}
+
+#Create a new variable (best_response)
+respeval_n$best_response <- map(respeval_n$data, get_best_resp) %>%
+  reduce(c)
+
+respeval_n
+```
+
+### Data set: ae (Adverse Events)
+### Variable: AESEV (Grade/Severity)
+```{r}
+table(ae$AESEV)
+```
+
+### Create a new data set: aec
+### Reorder levels of adverse events
+```{r}
+aec <- ae %>%
+  mutate(AESEV = 
+           factor(AESEV,
+                  levels = c("Mild", "Moderate", "Severe",
+                             "Life threatening", "Fatal")))
+table(aec$AESEV)
+```
+
+```{r}
+#Create a new numeric variable to indicate the grade of adverse event
+aec <- aec %>% mutate(aesev_num = as.integer(AESEV))
+
+#One row of all data per subject
+aec <- aec %>% nest(aes = -SUBJID)
+
+#Create a new variable to indicate the number of adverse events of each patient
+aec <- aec %>% mutate(num_ae = map_int(aes, nrow))
+```
+
+### Find the worst adverse event of each subject
+```{r}
+get_worst_ae <- function(x) {
+  na_ret <- factor(NA, levels = c("Mild", "Moderate", "Severe",
+                                  "Life threatening", "Fatal"))
+  if ( is.null(x) || nrow(x) == 0) {
+    return(na_ret)
+  }
+  ret <- x$AESEV[which.max(as.integer(x$AESEV))] # AESEV is factor with levels
+  if (length(ret) == 0) {
+    ret <- na_ret
+  }
+  ret
+}
+
+#Create a new variable (worst_ae)
+aec$worst_ae <- map(aec$aes, get_worst_ae) %>%
+  reduce(c)
+```
+
+### Combine two data sets into one data set
+```{r}
+#Combine aec and respeval_n
+ar <- full_join(aec, respeval_n %>% select(SUBJID, nvisits, best_response), by = "SUBJID")
+ar <- full_join(ar, demo %>% select(SUBJID, TRT), by = "SUBJID")
+ar
+```
+
+```{r}
+#Divide the combined data set into two data sets by treatment
+ar1 <- ar %>% filter(TRT == "Panitumumab + FOLFOX")
+ar0 <- ar %>% filter(TRT == "FOLFOX alone")
+```
+
+### Plot the number of visits versus number of adverse events in two arms per patient
+```{r}
+ggplot(ar1, aes(x = jitter(nvisits), y = jitter(num_ae), color = best_response)) +
+  geom_point(alpha = 0.5) +
+  theme_minimal() + 
+  ggtitle("Experimental Arm") +
+  labs(y="Number of Adverse Events", x = "Number of Visits") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+ggplot(ar0, aes(x = jitter(nvisits), y = jitter(num_ae), color = best_response)) +
+  geom_point(alpha = 0.5) +
+  theme_minimal() + 
+  ggtitle("Active Comparator Arm") +
+  labs(y="Number of Adverse Events", x = "Number of Visits") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+From this plot, the color of the best response between treatment and placebo group looks similar. Second, it looks like there are more adverse event in treatment group.
+
+### Best response vs. Arm
+### Plot the best response by arm (perspective)
+```{r}
+var_roles1 <- list(
+  respeval = "best_response",
+  group = "TRT"
+)
+ar <- add_roles(ar, var_roles1)
+pp1 <- ar %>% perspective(respeval ~ group)
+pp1$perspective[[1]]
+```
+
+### Plot the best response by arm (ggplot)
+```{r}
+Treatment_br <- data.frame(table(ar1$best_response))
+Placebo_br <- data.frame(table(ar0$best_response))
+names(Treatment_br) <- c("Best Response", "Number")
+names(Placebo_br) <- c("Best Response", "Number")
+
+p1 <- ggplot(Treatment_br, aes(x = `Best Response`, y = Number)) + 
+      geom_col(width = 0.3, fill = "Navy") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+      ggtitle("Experimental Arm") +
+      labs(y="Number of Best Response", x = "Best Response") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+p2 <- ggplot(Placebo_br, aes(x = `Best Response`, y = Number)) + 
+      geom_col(width = 0.3, fill = "Salmon") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+      ggtitle("Active Comparator Arm") +
+      labs(y="Number of Best Response", x = "Best Response") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggarrange(p1, p2, ncol=2, nrow=1)
+```
+As the bar graphs shown again, the distribution of the best response of both arms looks very similar.
+
+### Number of adverse events vs. Arm
+### Plot the density graph for adverse events by arm (ggplot)
+```{r}
+mean_treatment <- ar1 %>%
+  pull(num_ae) %>%
+  mean()
+
+mean_placebo <- ar0 %>%
+  pull(num_ae) %>%
+  mean()
+
+p3 <- ggplot(ar1, aes(x = num_ae)) + 
+      scale_y_continuous(limits = c(0, 0.04)) +
+      geom_density(fill = "Navy", color = "Navy") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+      geom_vline(xintercept = mean_treatment, size = 0.5, color = "Salmon") + 
+      ggtitle("Experimental Arm") +
+      labs(x = "Number of Adverse Events", y = "Density") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+p4 <- ggplot(ar0, aes(x = num_ae)) + 
+      scale_y_continuous(limits = c(0, 0.04)) +
+      geom_density(fill = "Salmon", color = "Salmon") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+      geom_vline(xintercept = mean_placebo, size = 0.5, color = "Navy") + 
+      ggtitle("Active Comparator Arm") +
+      labs(x = "Number of Adverse Events", y = "Density") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggarrange(p3, p4, ncol = 2, nrow = 1)
+```
+As we can see from the above graphs, there are more patients who have more adverse events associated with the experimental arm than the active comparator arm. From the mean line, we can also see that the mean number of adverse events from treatment group is larger than that from placebo group.
+
+Based on the above observations, we decide to further study the relationship between the worst adverse event and the treatment.
+
+### The worst adverse event vs. Arm
+### Plot the worst adverse events by arm (perspective)
+```{r}
+var_roles2 <- list(
+  ae = c("worst_ae"),
+  group = c("TRT"),
+  respeval = c("best_response")
+)
+
+ar <- add_roles(ar, var_roles2)
+pp2 <- ar %>% perspective(ae ~ group)
+pp2$perspective[[1]]
+```
+
+### Plot the worst adverse events by arm (ggplot)
+```{r}
+Treatment_ae <- data.frame(table(ar1$worst_ae))
+Placebo_ae <- data.frame(table(ar0$worst_ae))
+names(Treatment_ae) <- c("Worst of Adverse Event", "Number")
+names(Placebo_ae) <- c("Worst of Adverse Event", "Number")
+
+p5 <- ggplot(Treatment_ae, aes(x = `Worst of Adverse Event`, y = Number)) + 
+      scale_y_continuous(limits = c(0, 280)) +
+      geom_col(width = 0.3, fill = "Navy") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+      ggtitle("Experimental Arm") +
+      labs(x = "Worst of Adverse Event", y = "Number") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+p6 <- ggplot(Placebo_ae, aes(x = `Worst of Adverse Event`, y = Number)) + 
+      scale_y_continuous(limits = c(0, 280)) +
+      geom_col(width = 0.3, fill = "Salmon") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+      ggtitle("Active Comparator Arm") +
+      labs(x = "Worst of Adverse Event", y = "Number") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggarrange(p5, p6, ncol = 2, nrow = 1)
+```
+From this comparison, there are more serious adverse event associated with the treatment group than placebo group.
+
+Based on what we have done about the exploratory, we put forward three potential research questions:
+1. Does the treatment of both FOLFOX and Panitumumab improve the best response of patients than FOLFOX?
+2. Does the treatment of both FOLFOX and Panitumumab reduce the number of adverse events of patients than FOLFOX?
+3. Does the treatment of both FOLFOX and Panitumumab improve the worst adverse event of patients than FOLFOX?
+
+### Create hypotheses and plans for testing
+### Test the hypotheses and interpretations
+Given what we have seen from the previous exploratory analysis, we came up with the following three hypotheses. 
+
+1. Null hypothesis$H_0$: There is no true difference on best response for patients in FOLFOX + Panitumumab group and FOLFOX alone group.
+
+To test this hypothesis, we used Chi-Square because our independent variable "TRT" has 2 levels (treatment or placebo) and we only have one dependent variable "best_response" which is a categorical variable.
+
+```{r}
+chisq.test(ar$TRT, ar$best_response)
+```
+From the Chi-square test, p-value is larger than 0.05. At 0.05 significance level, we cannot reject the null hypothesis. We conclude that Compared with FOLFOX alone, FOLFOX + Panitumumab does not improve patients' best response.
+
+2. Null hypothesis$H_0$: Compared with FOLFOX alone group, patients in FOLFOX + Panitumumab group have the same number of adverse events.
+
+To test this hypothesis, we used two independent sample t-test because our independent variable "TRT" has 2 levels (treatment or placebo) and the nature of dependent variable "num_ae" is continuous variable.
+
+```{r}
+t.test(ar$num_ae ~ ar$TRT)
+```
+From the two independent sample t-test, p-value is smaller than 0.05. At 0.05 significance level, we can reject the null hypothesis. So we conclude that compared with FOLFOX alone group, patients in FOLFOX + Panitumumab group have more adverse events.
+
+3. Null hypothesis$H_0$: There is no true difference on the worst adverse events for patients in FOLFOX + Panitumumab group and FOLFOX alone group.
+
+To test this hypothesis, we used Chi-Square because our independent variable "TRT" has 2 levels (treatment or placebo) and we only have one dependent variable "worst_ae" event which is a categorical variable. 
+
+```{r}
+chisq.test(ar$TRT, ar$worst_ae)
+```
+From the Chi-square test, p-value is smaller than 0.05. At 0.05 significance level, we can reject the null hypothesis. So we conclude that there is a difference on the worst events for patient in FOLFOX + Panitumumab group and FOLFOX alone group.
+
+Further thoughts: In our analysis and tests, we concluded that panitumumab in combination with FOLFOX compared to FOLFOX alone for metastatic colorectal cancer does not improve patients' best response and bring more adverse events and more serious adverse events. 
+
+However, because we are unable to find the KRAS variable in the data set, we did not take into account of KRAS gene mutation. In fact, researcher in this study observed that patients with KRAS wild type who used FOLFOX + Panitumumab tend to have a statistically longer progression free survival time. Unfortunately, based on our analysis, we could easily underestimate the significance of Panitumumab. Therefore, in future studies, we need to take into account all possible variables and try to stratify our analysis based on them.

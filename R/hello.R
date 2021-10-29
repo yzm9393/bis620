@@ -10,6 +10,9 @@
 #' hello(FALSE)
 #' @export
 hello <- function(world = TRUE, verbose = FALSE) {
+  if (!is.logical(world) && !is.logical(verbose)) {
+    stop("Parameters must be logical.")
+  }
   if (world) {
     ret <- "Hello, world!"
   } else {

@@ -2,7 +2,7 @@ Package: bis620
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
-Author: Who wrote it
+Author: Zimo Yang
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
@@ -12,7 +12,24 @@ LazyData: true
 RoxygenNote: 7.1.2
 Imports:
   dplyr,
-  ggplot2
+  ggplot2,
+  haven,
+  tibble,
+  purrr,
+  tidyr,
+  listdown,
+  gtsummary,
+  patchwork,
+  ggpubr,
+  plotly,
+  forcats,
+  forceps,
+  variate,
+  devtools,
+  Rmpfr
+Remotes: 
+  kaneplusplus/forceps,
+  kaneplusplus/variate
 Suggests:
   DT,
   rmarkdown,
