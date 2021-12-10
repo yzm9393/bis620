@@ -1,0 +1,674 @@
+---
+title: "homework-3"
+author: Jiaxuan Zhao, Zimo Yang, Ziqiu Zheng
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{homework-3}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+As mentioned in class, a sparse matrix represents a matrix by the non-zero elements. For example, a sparse matrix whose non-zero
+elements having values at 1, 1 and 2, 1 respectively can be represented in R as:
+
+```{r}
+bsm1 <- data.frame(i = c(1, 2), j = c(1, 1), x = c(4.4, 1.2))
+```
+
+You can then add two of these sparse matrices with the following code:
+
+```{r}
+bis620_sparse_add <- function(a, b) {
+  c <- merge(a, b, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x + c$x2
+  c[, c("i", "j", "x")]
+}
+```
+
+and then you could verify that the code is correct with:
+
+```{r}
+bsm2 <- data.frame(i = c(3, 1), j = c(1, 3), x = c(4.4, 1.2))
+bis620_sparse_add(bsm1, bsm2)
+```
+
+However, there is a lot of room for improvement with this implementation. In this homework, you may work in groups of up to 3. Please do the following:
+
+1. Create a sparse matrix class that either holds data with the `data.frame` representation above or is a `data.frame` with the above representation. (1 points)
+2. Add arithmetic operators `+`, `-`, `/`, and `*` along with `%*%` so that the matrix behaves like a regular R matrix. (2 points)
+3. Add a print function so that it's easier to see the layout. You may use the `Matrix::sparseMatrix` print method if it's helpful. (1 point)
+4. Make sure that your matrix is compatible with other R matrics. Use the code below to test it. (2 points)
+5. Add the new matrix, the operators, and the tests into your `bis620` package. (2 points)
+6. Propose a final homework for this class. (2 points)
+
+```{r}
+library(bis620)
+library(Matrix)
+```
+
+## 1
+```{r}
+
+bis620_sparse_matrix <- setClass(Class = "bis620_sparse_matrix",
+                                 representation(i = "numeric",
+                                                j = "numeric",
+                                                x = "numeric"))
+
+```
+
+## 2
+
+```{r}
+
+############################## `+` ##############################
+
+# `+` for bis620 sparse matrix and bis620 sparse matrix
+
+setMethod(
+  "+",
+  c(e1="bis620_sparse_matrix",e2="bis620_sparse_matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- data.frame(i=e2@i,j=e2@j,x=e2@x)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x + c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# change a dense matrix to sparse matrix
+
+dense_to_sparse <- function(dense){
+  i <- c()
+  j <- c()
+  x <- c()
+  for (col in 1:ncol(dense)){
+    for (row in 1:nrow(dense)){
+      if(dense[row,col]!=0){
+        i <- c(i,row)
+        j <- c(j,col)
+        x <- c(x,dense[row,col])
+      }
+    }
+  }
+  data.frame(i=i,j=j,x=x)
+}
+
+# `+` for bis620 sparse matrix and dense matrix
+
+setMethod(
+  "+",
+  c(e1="bis620_sparse_matrix",e2="matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x + c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# `+` for dgeMatrix and bis620 sparse matrix
+
+setMethod(
+  "+",
+  c(e1="dgeMatrix",e2="bis620_sparse_matrix"),
+  function(e1, e2) {
+  e1 <- dense_to_sparse(e1)
+  e2 <- data.frame(i=e2@i,j=e2@j,x=e2@x)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x + c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# `+` for bis620 sparse matrix and dgCMatrix
+
+setMethod(
+  "+",
+  c(e1="bis620_sparse_matrix",e2="dgCMatrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x + c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+############################## `-` ##############################
+
+# `-` for bis620 sparse matrix and bis620 sparse matrix
+
+setMethod(
+  "-",
+  c(e1="bis620_sparse_matrix",e2="bis620_sparse_matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- data.frame(i=e2@i,j=e2@j,x=e2@x)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x - c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+) 
+
+# `-` for bis620 sparse matrix and dense matrix
+
+setMethod(
+  "-",
+  c(e1="bis620_sparse_matrix",e2="matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x - c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# `-` for bis620 sparse matrix and dgeMatrix
+
+setMethod(
+  "-",
+  c(e1="bis620_sparse_matrix",e2="dgeMatrix"),
+  function(e1, e2) {
+    e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+    e2 <- dense_to_sparse(e2)
+    colnames(e1) <- c("i","j","x")
+    colnames(e2) <- c("i","j","x")
+    c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+               suffixes = c("", "2"))
+    c$x[is.na(c$x)] <- 0
+    c$x2[is.na(c$x2)] <- 0
+    c$x <- c$x - c$x2
+    a <- bis620_sparse_matrix(
+             i = c$i,
+             j = c$j,
+             x = c$x)
+    a
+  }
+)
+
+# `-` for bis620 sparse matrix and dgCMatrix
+setMethod(
+  "-",
+  c(e1="bis620_sparse_matrix",e2="dgCMatrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x - c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+############################## `*` ##############################
+
+# `*` for bis620 sparse matrix and bis620 sparse matrix
+
+setMethod(
+  "*",
+  c(e1="bis620_sparse_matrix",e2="bis620_sparse_matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- data.frame(i=e2@i,j=e2@j,x=e2@x)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x * c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+) 
+
+# `*` for bis620 sparse matrix and dense matrix
+
+setMethod(
+  "*",
+  c(e1="bis620_sparse_matrix",e2="matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x * c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# `*` for bis620 sparse matrix and dgeMatrix
+
+setMethod(
+  "*",
+  c(e1="bis620_sparse_matrix",e2="dgeMatrix"),
+  function(e1, e2) {
+    e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+    e2 <- dense_to_sparse(e2)
+    colnames(e1) <- c("i","j","x")
+    colnames(e2) <- c("i","j","x")
+    c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+               suffixes = c("", "2"))
+    c$x[is.na(c$x)] <- 0
+    c$x2[is.na(c$x2)] <- 0
+    c$x <- c$x * c$x2
+    a <- bis620_sparse_matrix(
+             i = c$i,
+             j = c$j,
+             x = c$x)
+    a
+  }
+)
+
+# `*` for bis620 sparse matrix and dgCMatrix
+
+setMethod(
+  "*",
+  c(e1="bis620_sparse_matrix",e2="dgCMatrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x * c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+############################## `/` ##############################
+
+# `/` for bis620 sparse matrix and bis620 sparse matrix
+
+setMethod(
+  "/",
+  c(e1="bis620_sparse_matrix",e2="bis620_sparse_matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- data.frame(i=e2@i,j=e2@j,x=e2@x)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x / c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+) 
+
+# `/` for bis620 sparse matrix and dense matrix
+
+setMethod(
+  "/",
+  c(e1="bis620_sparse_matrix",e2="matrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x / c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# `/` for bis620 sparse matrix and dgeMatrix
+
+setMethod(
+  "/",
+  c(e1="bis620_sparse_matrix",e2="dgeMatrix"),
+  function(e1, e2) {
+    e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+    e2 <- dense_to_sparse(e2)
+    colnames(e1) <- c("i","j","x")
+    colnames(e2) <- c("i","j","x")
+    c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+               suffixes = c("", "2"))
+    c$x[is.na(c$x)] <- 0
+    c$x2[is.na(c$x2)] <- 0
+    c$x <- c$x / c$x2
+    a <- bis620_sparse_matrix(
+             i = c$i,
+             j = c$j,
+             x = c$x)
+    a
+  }
+)
+
+# `/` for bis620 sparse matrix and dgCMatrix
+
+setMethod(
+  "/",
+  c(e1="bis620_sparse_matrix",e2="dgCMatrix"),
+  function(e1, e2) {
+  e1 <- data.frame(i=e1@i,j=e1@j,x=e1@x)
+  e2 <- dense_to_sparse(e2)
+  colnames(e1) <- c("i","j","x")
+  colnames(e2) <- c("i","j","x")
+  c <- merge(e1, e2, by = c("i", "j"), all = TRUE,
+             suffixes = c("", "2"))
+  c$x[is.na(c$x)] <- 0
+  c$x2[is.na(c$x2)] <- 0
+  c$x <- c$x / c$x2
+  a <- bis620_sparse_matrix(
+  i = c$i, 
+  j = c$j, 
+  x = c$x)
+  a
+  }
+)
+
+# `%*%` for bis620 sparse matrix and bis620 sparse matrix
+
+setMethod(
+  "%*%",
+  c(x="bis620_sparse_matrix",y="bis620_sparse_matrix"),
+  function(x, y) {
+    x <- data.frame(i=x@i,j=x@j,x=x@x)
+    y <- data.frame(i=y@i,j=y@j,x=y@x)
+    w <- c()
+    e <- c()
+    r <- c()
+    for (row in unique(x$i)){
+      for (col in unique(y$j)){
+        p <- x[x$i == row,]
+        q <- y[y$j == col,]
+        full <- merge(p,q,by.x="j",by.y="i")
+        full$x <- full$x.x*full$x.y
+        w <- c(w, row)
+        e <- c(e, col)
+        r <- c(r, sum(full$x))
+      }
+    }
+    a <- data.frame(i = w, j = e, x = r)
+    a <- a[a$x != 0,]
+    b <- bis620_sparse_matrix(i = a$i, j = a$j, x = a$x)
+  }
+)
+
+# `%*%` for bis620 sparse matrix and dense matrix
+
+setMethod(
+  "%*%",
+  c(x="bis620_sparse_matrix",y="matrix"),
+  function(x, y) {
+    x <- data.frame(i=x@i,j=x@j,x=x@x)
+    y <- dense_to_sparse(y)
+    w <- c()
+    e <- c()
+    r <- c()
+    for (row in unique(x$i)){
+      for (col in unique(y$j)){
+        p <- x[x$i == row,]
+        q <- y[y$j == col,]
+        full <- merge(p,q,by.x="j",by.y="i")
+        full$x <- full$x.x*full$x.y
+        w <- c(w, row)
+        e <- c(e, col)
+        r <- c(r, sum(full$x))
+      }
+    }
+    a <- data.frame(i = w, j = e, x = r)
+    a <- a[a$x != 0,]
+    b <- bis620_sparse_matrix(i = a$i, j = a$j, x = a$x)
+  }
+)
+
+# `%*%` for bis620 sparse matrix and dgeMatrix
+
+setMethod(
+  "%*%",
+  c(x="bis620_sparse_matrix",y="dgeMatrix"),
+  function(x, y) {
+    x <- data.frame(i=x@i,j=x@j,x=x@x)
+    y <- dense_to_sparse(y)
+    w <- c()
+    e <- c()
+    r <- c()
+    for (row in unique(x$i)){
+      for (col in unique(y$j)){
+        p <- x[x$i == row,]
+        q <- y[y$j == col,]
+        full <- merge(p,q,by.x="j",by.y="i")
+        full$x <- full$x.x*full$x.y
+        w <- c(w, row)
+        e <- c(e, col)
+        r <- c(r, sum(full$x))
+      }
+    }
+    a <- data.frame(i = w, j = e, x = r)
+    a <- a[a$x != 0,]
+    b <- bis620_sparse_matrix(i = a$i, j = a$j, x = a$x)
+  }
+)
+
+# `%*%` for bis620 sparse matrix and dgCMatrix
+
+setMethod(
+  "%*%",
+  c(x="bis620_sparse_matrix",y="dgCMatrix"),
+  function(x, y) {
+    x <- data.frame(i=x@i,j=x@j,x=x@x)
+    y <- dense_to_sparse(y)
+    w <- c()
+    e <- c()
+    r <- c()
+    for (row in unique(x$i)){
+      for (col in unique(y$j)){
+        p <- x[x$i == row,]
+        q <- y[y$j == col,]
+        full <- merge(p,q,by.x="j",by.y="i")
+        full$x <- full$x.x*full$x.y
+        w <- c(w, row)
+        e <- c(e, col)
+        r <- c(r, sum(full$x))
+      }
+    }
+    a <- data.frame(i = w, j = e, x = r)
+    a <- a[a$x != 0,]
+    b <- bis620_sparse_matrix(i = a$i, j = a$j, x = a$x)
+  }
+)
+
+# `%*%` for dgCMatrix and bis620 sparse matrix
+
+setMethod(
+  "%*%",
+  c(x="dgCMatrix",y="bis620_sparse_matrix"),
+  function(x, y) {
+    x <- dense_to_sparse(x)
+    y <- data.frame(i=y@i,j=y@j,x=y@x)
+    w <- c()
+    e <- c()
+    r <- c()
+    for (row in unique(x$i)){
+      for (col in unique(y$j)){
+        p <- x[x$i == row,]
+        q <- y[y$j == col,]
+        full <- merge(p,q,by.x="j",by.y="i")
+        full$x <- full$x.x*full$x.y
+        w <- c(w, row)
+        e <- c(e, col)
+        r <- c(r, sum(full$x))
+      }
+    }
+    a <- data.frame(i = w, j = e, x = r)
+    a <- a[a$x != 0,]
+    b <- bis620_sparse_matrix(i = a$i, j = a$j, x = a$x)
+  }
+)
+
+############################## Transpose ##############################
+
+setMethod(
+  "t",
+  c(x="bis620_sparse_matrix"),
+  function(x) {
+    b <- bis620_sparse_matrix(i = x@j, j = x@i, x = x@x)
+    b
+  }
+)
+```
+
+## 3
+
+```{r}
+setMethod(
+  f="print",
+  signature(x="bis620_sparse_matrix"),
+  function(x) {
+    print(sparseMatrix(
+      i = x@i, 
+      j = x@j, 
+      x = x@x)
+    )
+  }
+)
+
+```
+
+## 4
+
+```{r}
+# Tests
+x1 <- bis620_sparse_matrix(
+  i = c(1, 2, 5, 6), 
+  j = c(2, 2, 6, 1), 
+  x = c(4.3, 5.6, 7, 10)
+)
+
+set.seed(1)
+
+x2 <- matrix(rnorm(36), ncol = 6)
+
+library(Matrix)
+
+set.seed(1)
+
+x3 <- Matrix(rnorm(36), ncol = 6)
+
+x4 <- sparseMatrix(  
+  i = c(1, 1, 3, 6), 
+  j = c(2, 3, 5, 1), 
+  x = c(4.3, 5.6, 7, 10),
+  dims = c(6, 6)
+)
+
+# Test that the following are correct:
+x1 + x1
+t(x1) %*% x1
+x1 %*% x1
+x1 + t(x2)
+x1 %*% x2 
+x3 + x1
+x3 %*% x3
+x1 + x4
+x1 %*% x4
+
+```
+
+## 6
+
+Proposal: We would like to conduct a clinical analysis that includes data cleaning, survival analysis, and longitudinal analysis using data from Project Data Sphere. We might use Python and R. The title of data set we will use is "Study on Prolonging Bone Metastasis-Free Survival in Men With Hormone Refractory Prostate Cancer", and its NCT number is [NCT00286091](https://clinicaltrials.gov/ct2/show/study/NCT00286091).
