@@ -1,0 +1,294 @@
+---
+title: "Homework 4"
+author: "Clover Zhao, Ziqiu Zheng, Zimo Yang"
+date: "12/4/2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{homework-1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Build the numpy matrix class:
+```{r}
+library(reticulate)
+py_install("numpy")
+np <- import("numpy", convert = FALSE)
+setOldClass("numpy.ndarray")
+bis620_pymatrix <- setClass(Class = "bis620_pymatrix",
+                            representation = representation(pymat = "numpy.ndarray"))
+
+```
+
+Overwrite the "+" algorithm for numpy matrix:
+
+```{r}
+# `+` for bis620 numpy matrix plus bis620 numpy matrix
+setMethod(
+  "+",
+  c(e1="bis620_pymatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    np$add(e1@pymat,e2@pymat)
+  }
+)
+
+# `+` for bis620 numpy matrix plus regular matrix
+setMethod(
+  "+",
+  c(e1="bis620_pymatrix",e2="matrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(e2)
+    np$add(e1@pymat,e2_py)
+  }
+)
+
+# `+` for dgeMatrix plus bis620 numpy matrix 
+setMethod(
+  "+",
+  c(e1="dgeMatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    e1_py <- r_to_py(as.matrix(e1))
+    np$add(e1_py,e2@pymat)
+  }
+)
+
+# `+` for bis620 numpy matrix plus dgCMatrix
+setMethod(
+  "+",
+  c(e1="bis620_pymatrix",e2="dgCMatrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(as.matrix(e2))
+    np$add(e1@pymat,e2_py)
+  }
+)
+```
+
+
+Overwrite the "-" algorithm for numpy matrix:
+
+```{r}
+# `-` for bis620 numpy matrix plus bis620 numpy matrix
+setMethod(
+  "-",
+  c(e1="bis620_pymatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    np$subtract(e1@pymat,e2@pymat)
+  }
+)
+
+# `-` for bis620 numpy matrix plus regular matrix
+setMethod(
+  "-",
+  c(e1="bis620_pymatrix",e2="matrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(e2)
+    np$subtract(e1@pymat,e2_py)
+  }
+)
+
+# `-` for dgeMatrix plus bis620 numpy matrix 
+setMethod(
+  "-",
+  c(e1="dgeMatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    e1_py <- r_to_py(as.matrix(e1))
+    np$subtract(e1_py,e2@pymat)
+  }
+)
+
+# `-` for bis620 numpy matrix plus dgCMatrix
+setMethod(
+  "-",
+  c(e1="bis620_pymatrix",e2="dgCMatrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(as.matrix(e2))
+    np$subtract(e1@pymat,e2_py)
+  }
+)
+```
+
+
+Overwrite the "*" algorithm for numpy matrix:
+
+```{r}
+# `*` for bis620 numpy matrix plus bis620 numpy matrix
+setMethod(
+  "*",
+  c(e1="bis620_pymatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    np$multiply(e1@pymat,e2@pymat)
+  }
+)
+
+# `*` for bis620 numpy matrix plus regular matrix
+setMethod(
+  "*",
+  c(e1="bis620_pymatrix",e2="matrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(e2)
+    np$multiply(e1@pymat,e2_py)
+  }
+)
+
+# `*` for dgeMatrix plus bis620 numpy matrix 
+setMethod(
+  "*",
+  c(e1="dgeMatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    e1_py <- r_to_py(as.matrix(e1))
+    np$multiply(e1_py,e2@pymat)
+  }
+)
+
+# `*` for bis620 numpy matrix plus dgCMatrix
+setMethod(
+  "*",
+  c(e1="bis620_pymatrix",e2="dgCMatrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(as.matrix(e2))
+    np$multiply(e1@pymat,e2_py)
+  }
+)
+```
+
+Overwrite the "/" algorithm for numpy matrix:
+
+```{r}
+# `/` for bis620 numpy matrix plus bis620 numpy matrix
+setMethod(
+  "/",
+  c(e1="bis620_pymatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    np$divide(e1@pymat,e2@pymat)
+  }
+)
+
+# `/` for bis620 numpy matrix plus regular matrix
+setMethod(
+  "/",
+  c(e1="bis620_pymatrix",e2="matrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(e2)
+    np$divide(e1@pymat,e2_py)
+  }
+)
+
+# `/` for dgeMatrix plus bis620 numpy matrix 
+setMethod(
+  "/",
+  c(e1="dgeMatrix",e2="bis620_pymatrix"),
+  function(e1, e2) {
+    e1_py <- r_to_py(as.matrix(e1))
+    np$divide(e1_py,e2@pymat)
+  }
+)
+
+# `/` for bis620 numpy matrix plus dgCMatrix
+setMethod(
+  "/",
+  c(e1="bis620_pymatrix",e2="dgCMatrix"),
+  function(e1, e2) {
+    e2_py <- r_to_py(as.matrix(e2))
+    np$divide(e1@pymat,e2_py)
+  }
+)
+```
+
+Overwrite the "%*%" algorithm for numpy matrix:
+
+```{r}
+# `%*%` for bis620 numpy matrix multiply (dot) bis620 numpy matrix
+setMethod(
+  "%*%",
+  c(x="bis620_pymatrix",y="bis620_pymatrix"),
+  function(x, y) {
+     np$dot(x@pymat,y@pymat)
+  }
+)
+
+# `%*%` for bis620 numpy matrix multiply (dot) regular matrix
+setMethod(
+  "%*%",
+  c(x="bis620_pymatrix",y="matrix"),
+  function(x, y) {
+    y_py <- r_to_py(y)
+    np$dot(x@pymat,y_py)
+  }
+)
+
+# `%*%` for dgeMatrix multiply (dot) bis620 numpy matrix 
+setMethod(
+  "%*%",
+  c(x="dgeMatrix",y="bis620_pymatrix"),
+  function(x, y) {
+    x_py <- r_to_py(as.matrix(x))
+    np$dot(x_py,y@pymat)
+  }
+)
+
+# `%*%` for bis620 numpy matrix multiply (dot) dgCMatrix
+setMethod(
+  "%*%",
+  c(x="bis620_pymatrix",y="dgCMatrix"),
+  function(x, y) {
+    y_py <- r_to_py(as.matrix(y))
+    np$dot(x@pymat,y_py)
+  }
+)
+
+```
+
+
+Overwrite the transpose algorithm for numpy matrix:
+
+```{r}
+setMethod(
+  "t",
+  c(x="bis620_pymatrix"),
+  function(x) {
+    b <- x@pymat$transpose()
+    b_numpy <- bis620_pymatrix(
+      pymat = b
+    )
+  }
+)
+```
+
+
+Test for the algorithms:
+
+```{r eval = FALSE}
+# Tests
+x1 <- new(Class="bis620_pymatrix",
+  pymat = np$array(list(1:6, 1:6, 1:6,1:6, 1:6, 1:6))
+)
+
+set.seed(1)
+
+x2 <- matrix(rnorm(36), ncol = 6)
+
+library(Matrix)
+set.seed(1)
+x3 <- Matrix(rnorm(36), ncol = 6)
+x4 <- sparseMatrix(  
+  i = c(1, 1, 3, 6), 
+  j = c(2, 3, 5, 1), 
+  x = c(4.3, 5.6, 7, 10),
+  dims = c(6, 6)
+)
+# Test that the following are correct:
+x1 + x1
+t(x1) %*% x1
+x1 %*% x1
+x1 + t(x2)
+x1 %*% x2
+x3 + x1
+x3 %*% x3
+x1 + x4
+x1 %*% x4
+```
