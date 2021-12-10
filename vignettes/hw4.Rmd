@@ -1,12 +1,8 @@
 ---
-title: "hw4"
-author: "Clover Zhao, Ziqiu Zheng, Zimo Yang"
-date: "12/10/2021"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{hw4}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+title: "Homework 4"
+author: "Clover Zhao (jz737), Ziqiu Zheng (zz377), Zimo Yang (zy263)"
+date: "12/4/2021"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -15,14 +11,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 Build the numpy matrix class:
+
 ```{r}
-library(reticulate)
-py_install("numpy")
 np <- import("numpy", convert = FALSE)
 setOldClass("numpy.ndarray")
 bis620_pymatrix <- setClass(Class = "bis620_pymatrix",
                             representation = representation(pymat = "numpy.ndarray"))
-
 ```
 
 Overwrite the "+" algorithm for numpy matrix:
@@ -36,7 +30,6 @@ setMethod(
     np$add(e1@pymat,e2@pymat)
   }
 )
-
 # `+` for bis620 numpy matrix plus regular matrix
 setMethod(
   "+",
@@ -46,7 +39,6 @@ setMethod(
     np$add(e1@pymat,e2_py)
   }
 )
-
 # `+` for dgeMatrix plus bis620 numpy matrix 
 setMethod(
   "+",
@@ -56,7 +48,6 @@ setMethod(
     np$add(e1_py,e2@pymat)
   }
 )
-
 # `+` for bis620 numpy matrix plus dgCMatrix
 setMethod(
   "+",
@@ -67,7 +58,6 @@ setMethod(
   }
 )
 ```
-
 
 Overwrite the "-" algorithm for numpy matrix:
 
@@ -80,7 +70,6 @@ setMethod(
     np$subtract(e1@pymat,e2@pymat)
   }
 )
-
 # `-` for bis620 numpy matrix plus regular matrix
 setMethod(
   "-",
@@ -90,7 +79,6 @@ setMethod(
     np$subtract(e1@pymat,e2_py)
   }
 )
-
 # `-` for dgeMatrix plus bis620 numpy matrix 
 setMethod(
   "-",
@@ -100,7 +88,6 @@ setMethod(
     np$subtract(e1_py,e2@pymat)
   }
 )
-
 # `-` for bis620 numpy matrix plus dgCMatrix
 setMethod(
   "-",
@@ -111,7 +98,6 @@ setMethod(
   }
 )
 ```
-
 
 Overwrite the "*" algorithm for numpy matrix:
 
@@ -124,7 +110,6 @@ setMethod(
     np$multiply(e1@pymat,e2@pymat)
   }
 )
-
 # `*` for bis620 numpy matrix plus regular matrix
 setMethod(
   "*",
@@ -134,7 +119,6 @@ setMethod(
     np$multiply(e1@pymat,e2_py)
   }
 )
-
 # `*` for dgeMatrix plus bis620 numpy matrix 
 setMethod(
   "*",
@@ -144,7 +128,6 @@ setMethod(
     np$multiply(e1_py,e2@pymat)
   }
 )
-
 # `*` for bis620 numpy matrix plus dgCMatrix
 setMethod(
   "*",
@@ -167,7 +150,6 @@ setMethod(
     np$divide(e1@pymat,e2@pymat)
   }
 )
-
 # `/` for bis620 numpy matrix plus regular matrix
 setMethod(
   "/",
@@ -177,7 +159,6 @@ setMethod(
     np$divide(e1@pymat,e2_py)
   }
 )
-
 # `/` for dgeMatrix plus bis620 numpy matrix 
 setMethod(
   "/",
@@ -187,7 +168,6 @@ setMethod(
     np$divide(e1_py,e2@pymat)
   }
 )
-
 # `/` for bis620 numpy matrix plus dgCMatrix
 setMethod(
   "/",
@@ -210,7 +190,6 @@ setMethod(
      np$dot(x@pymat,y@pymat)
   }
 )
-
 # `%*%` for bis620 numpy matrix multiply (dot) regular matrix
 setMethod(
   "%*%",
@@ -220,7 +199,6 @@ setMethod(
     np$dot(x@pymat,y_py)
   }
 )
-
 # `%*%` for dgeMatrix multiply (dot) bis620 numpy matrix 
 setMethod(
   "%*%",
@@ -230,7 +208,6 @@ setMethod(
     np$dot(x_py,y@pymat)
   }
 )
-
 # `%*%` for bis620 numpy matrix multiply (dot) dgCMatrix
 setMethod(
   "%*%",
@@ -240,9 +217,7 @@ setMethod(
     np$dot(x@pymat,y_py)
   }
 )
-
 ```
-
 
 Overwrite the transpose algorithm for numpy matrix:
 
@@ -259,7 +234,6 @@ setMethod(
 )
 ```
 
-
 Test for the algorithms:
 
 ```{r eval = FALSE}
@@ -267,11 +241,8 @@ Test for the algorithms:
 x1 <- new(Class="bis620_pymatrix",
   pymat = np$array(list(1:6, 1:6, 1:6,1:6, 1:6, 1:6))
 )
-
 set.seed(1)
-
 x2 <- matrix(rnorm(36), ncol = 6)
-
 library(Matrix)
 set.seed(1)
 x3 <- Matrix(rnorm(36), ncol = 6)
