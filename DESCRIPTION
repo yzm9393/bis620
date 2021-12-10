@@ -28,8 +28,7 @@ Imports:
   devtools,
   Rmpfr,
   Matrix,
-  methods,
-  reticulate
+  methods
 Remotes: 
   kaneplusplus/forceps,
   kaneplusplus/variate
