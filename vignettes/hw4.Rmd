@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Build the numpy matrix class:
 
 ```{r}
+library(reticulate)
 np <- import("numpy", convert = FALSE)
 setOldClass("numpy.ndarray")
 bis620_pymatrix <- setClass(Class = "bis620_pymatrix",
@@ -266,12 +267,12 @@ x1 %*% x4
 ## Redo final proposal
 
 About 6.2 million adults in the United States have heart failure. In 2018, heart failure was mentioned on 379,800 death certificates (13.4%). Certain medical conditions can increase the risk for heart failure, including coronary artery disease, diabetes, high blood pressure, and obesity.
-
+ 
 So our research question is how would age, a decrease of red blood cells or hemoglobin, level of the CPK enzyme in the blood, diabetes, percentage of blood leaving the heart at each contraction, hypertension, platelets in the blood, level of serum creatinine in the blood, level of serum sodium in the blood, smoking, and gender influence the mortality of heart failure. Moreover, how can we predict the mortality of heart failure based on the above eleven variables? 
+ 
+We will proceed with our study by analyzing the dataset of 299 patients with heart failure. The data has 13 columns which were collected in the Faisalabad Institute of Cardiology and at the Allied Hospital in Faisalabad in 2015. We obtained the open-sourced CSV file from Kaggle. We will first conduct exploratory data analysis to gain insights into the demographic distribution of the subjects. In addition to the techniques introduced in the lectures, we will also explore other means of visualizing the data and add interactive features to our visualization (such as Shiny). Furthermore, we will use various prediction models including logistic, lasso, and other machine learning models to answer the research question.
 
-We will proceed with our study by analyzing the dataset of 299 patients with heart failure. The data were collected in the Faisalabad Institute of Cardiology and at the Allied Hospital in Faisalabad in 2015. We obtained the open-sourced CSV file from Kaggle. We will first conduct exploratory data analysis to gain insights into the demographic distribution of the subjects. In addition to the techniques introduced in the lectures, we will also explore other means of visualizing the data and add interactive features to our visualization (such as Shiny). Furthermore, we will use various prediction models including logistic, lasso, and other machine learning models to answer the research question.
-
+ 
 References:
 Chicco, D., Jurman, G. Machine learning can predict survival of patients with heart failure from serum creatinine and ejection fraction alone. BMC Med Inform Decis Mak 20, 16 (2020). https://doi.org/10.1186/s12911-020-1023-5
-
 
