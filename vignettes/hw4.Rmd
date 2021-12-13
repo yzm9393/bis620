@@ -14,6 +14,7 @@ Build the numpy matrix class:
 
 ```{r}
 library(reticulate)
+use_condaenv("bis620")
 np <- import("numpy", convert = FALSE)
 setOldClass("numpy.ndarray")
 bis620_pymatrix <- setClass(Class = "bis620_pymatrix",
